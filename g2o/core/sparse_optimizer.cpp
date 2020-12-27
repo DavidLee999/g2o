@@ -300,7 +300,7 @@ namespace g2o
       _activeEdges.push_back(*it);
 
     sortVectorContainers();
-    bool indexMappingStatus = buildIndexMapping(_activeVertices);
+    bool indexMappingStatus = buildIndexMapping(_activeVertices); // 建立节点的海塞矩阵坐标
     postIteration(-1);
     return indexMappingStatus;
   }

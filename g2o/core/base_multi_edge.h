@@ -37,7 +37,8 @@
 #include "g2o/stuff/misc.h"
 #include "dynamic_aligned_buffer.hpp"
 
-namespace g2o {
+namespace g2o
+{
 
   /**
    * \brief base class to represent an edge connecting an arbitrary number of nodes
@@ -46,127 +47,126 @@ namespace g2o {
    * E - type to represent the measurement
    */
   template <int D, typename E>
-    class BaseMultiEdge : public BaseEdge<D,E>
-    {
-    public:
-      /**
+  class BaseMultiEdge : public BaseEdge<D, E>
+  {
+  public:
+    /**
        * \brief helper for mapping the Hessian memory of the upper triangular block
        */
-      struct HessianHelper {
-        Eigen::Map<MatrixX> matrix;     ///< the mapped memory
-        bool transposed;          ///< the block has to be transposed
-        HessianHelper() : matrix(0, 0, 0), transposed(false) {}
-      };
+    struct HessianHelper
+    {
+      Eigen::Map<MatrixX> matrix; ///< the mapped memory
+      bool transposed;            ///< the block has to be transposed
+      HessianHelper() : matrix(0, 0, 0), transposed(false) {}
+    };
 
-    public:
-      static const int Dimension = BaseEdge<D,E>::Dimension;
-      typedef typename BaseEdge<D,E>::Measurement Measurement;
-      typedef MatrixX::MapType JacobianType;
-      typedef typename BaseEdge<D,E>::ErrorVector ErrorVector;
-      typedef typename BaseEdge<D,E>::InformationType InformationType;
-      typedef Eigen::Map<MatrixX, MatrixX::Flags & Eigen::PacketAccessBit ? Eigen::Aligned : Eigen::Unaligned > HessianBlockType;
+  public:
+    static const int Dimension = BaseEdge<D, E>::Dimension;
+    typedef typename BaseEdge<D, E>::Measurement Measurement;
+    typedef MatrixX::MapType JacobianType;
+    typedef typename BaseEdge<D, E>::ErrorVector ErrorVector;
+    typedef typename BaseEdge<D, E>::InformationType InformationType;
+    typedef Eigen::Map<MatrixX, MatrixX::Flags & Eigen::PacketAccessBit ? Eigen::Aligned : Eigen::Unaligned> HessianBlockType;
 
-      BaseMultiEdge() : BaseEdge<D,E>()
-      {
-      }
-      
-      virtual void linearizeOplus(JacobianWorkspace& jacobianWorkspace);
+    BaseMultiEdge() : BaseEdge<D, E>()
+    {
+    }
 
-      /**
+    virtual void linearizeOplus(JacobianWorkspace &jacobianWorkspace);
+
+    /**
        * Linearizes the oplus operator in the vertex, and stores
        * the result in temporary variable vector _jacobianOplus
        */
-      virtual void linearizeOplus();
-      
-      virtual void resize(size_t size);
+    virtual void linearizeOplus();
 
-      virtual bool allVerticesFixed() const;
+    virtual void resize(size_t size);
 
-      virtual void constructQuadraticForm() ;
+    virtual bool allVerticesFixed() const;
 
-      virtual void mapHessianMemory(number_t* d, int i, int j, bool rowMajor);
+    virtual void constructQuadraticForm();
 
-      using BaseEdge<D,E>::computeError;
+    virtual void mapHessianMemory(number_t *d, int i, int j, bool rowMajor);
 
-    protected:
-      using BaseEdge<D,E>::_measurement;
-      using BaseEdge<D,E>::_information;
-      using BaseEdge<D,E>::_error;
-      using BaseEdge<D,E>::_vertices;
-      using BaseEdge<D,E>::_dimension;
+    using BaseEdge<D, E>::computeError;
 
-      std::vector<HessianHelper> _hessian;
-      std::vector<JacobianType, Eigen::aligned_allocator<JacobianType> > _jacobianOplus; ///< jacobians of the edge (w.r.t. oplus)
+  protected:
+    using BaseEdge<D, E>::_measurement;
+    using BaseEdge<D, E>::_information;
+    using BaseEdge<D, E>::_error;
+    using BaseEdge<D, E>::_vertices;
+    using BaseEdge<D, E>::_dimension;
 
-      void computeQuadraticForm(const InformationType& omega, const ErrorVector& weightedError);
+    std::vector<HessianHelper> _hessian;
+    std::vector<JacobianType, Eigen::aligned_allocator<JacobianType>> _jacobianOplus; ///< jacobians of the edge (w.r.t. oplus)
 
-    public:
-      EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    };
+    void computeQuadraticForm(const InformationType &omega, const ErrorVector &weightedError);
 
-
+  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  };
 
   // PARTIAL TEMPLATE SPECIALIZATION
   template <typename E>
-  class BaseMultiEdge<-1,E> : public BaseEdge<-1,E>
+  class BaseMultiEdge<-1, E> : public BaseEdge<-1, E>
   {
-    public:
-      /**
+  public:
+    /**
        * \brief helper for mapping the Hessian memory of the upper triangular block
        */
-      struct HessianHelper {
-        Eigen::Map<MatrixX> matrix;     ///< the mapped memory
-        bool transposed;          ///< the block has to be transposed
-        HessianHelper() : matrix(0, 0, 0), transposed(false) {}
-      };
+    struct HessianHelper
+    {
+      Eigen::Map<MatrixX> matrix; ///< the mapped memory
+      bool transposed;            ///< the block has to be transposed
+      HessianHelper() : matrix(0, 0, 0), transposed(false) {}
+    };
 
-    public:
-      static const int Dimension = BaseEdge<-1,E>::Dimension;
-      typedef typename BaseEdge<-1,E>::Measurement Measurement;
-      typedef MatrixX::MapType JacobianType;
-      typedef typename BaseEdge<-1,E>::ErrorVector ErrorVector;
-      typedef typename BaseEdge<-1,E>::InformationType InformationType;
-      typedef Eigen::Map<MatrixX, MatrixX::Flags & Eigen::PacketAccessBit ? Eigen::Aligned : Eigen::Unaligned > HessianBlockType;
+  public:
+    static const int Dimension = BaseEdge<-1, E>::Dimension;
+    typedef typename BaseEdge<-1, E>::Measurement Measurement;
+    typedef MatrixX::MapType JacobianType;
+    typedef typename BaseEdge<-1, E>::ErrorVector ErrorVector;
+    typedef typename BaseEdge<-1, E>::InformationType InformationType;
+    typedef Eigen::Map<MatrixX, MatrixX::Flags & Eigen::PacketAccessBit ? Eigen::Aligned : Eigen::Unaligned> HessianBlockType;
 
-      BaseMultiEdge() : BaseEdge<-1,E>()
+    BaseMultiEdge() : BaseEdge<-1, E>()
     {
       // this->_variableSize = true;
     }
 
-      virtual void linearizeOplus(JacobianWorkspace& jacobianWorkspace);
+    virtual void linearizeOplus(JacobianWorkspace &jacobianWorkspace);
 
-      /**
+    /**
        * Linearizes the oplus operator in the vertex, and stores
        * the result in temporary variable vector _jacobianOplus
        */
-      virtual void linearizeOplus();
+    virtual void linearizeOplus();
 
-      virtual void resize(size_t size);
+    virtual void resize(size_t size);
 
-      virtual bool allVerticesFixed() const;
+    virtual bool allVerticesFixed() const;
 
-      virtual void constructQuadraticForm() ;
+    virtual void constructQuadraticForm();
 
-      virtual void mapHessianMemory(number_t* d, int i, int j, bool rowMajor);
+    virtual void mapHessianMemory(number_t *d, int i, int j, bool rowMajor);
 
-      using BaseEdge<-1,E>::computeError;
+    using BaseEdge<-1, E>::computeError;
 
-    protected:
-      using BaseEdge<-1,E>::_measurement;
-      using BaseEdge<-1,E>::_information;
-      using BaseEdge<-1,E>::_error;
-      using BaseEdge<-1,E>::_vertices;
-      using BaseEdge<-1,E>::_dimension;
+  protected:
+    using BaseEdge<-1, E>::_measurement;
+    using BaseEdge<-1, E>::_information;
+    using BaseEdge<-1, E>::_error;
+    using BaseEdge<-1, E>::_vertices;
+    using BaseEdge<-1, E>::_dimension;
 
-      std::vector<HessianHelper> _hessian;
-      std::vector<JacobianType, Eigen::aligned_allocator<JacobianType> > _jacobianOplus; ///< jacobians of the edge (w.r.t. oplus)
+    std::vector<HessianHelper> _hessian;
+    std::vector<JacobianType, Eigen::aligned_allocator<JacobianType>> _jacobianOplus; ///< jacobians of the edge (w.r.t. oplus)
 
-      void computeQuadraticForm(const InformationType& omega, const ErrorVector& weightedError);
+    void computeQuadraticForm(const InformationType &omega, const ErrorVector &weightedError);
 
-    public:
-      EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
-    };
-
+  public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+  };
 
 #include "base_multi_edge.hpp"
 

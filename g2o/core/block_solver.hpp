@@ -254,7 +254,7 @@ namespace g2o
 
     for (OptimizableGraph::Vertex *v : _optimizer->indexMapping())
     {
-      if (v->marginalized())  // 要被marg的节点
+      if (v->marginalized()) // 要被marg的节点
       {
         // 该节点被marg后，会引入值的地方，即在(i1, i1), (i2, i2), (i1, i2), (i2, i1)引入值
         const HyperGraph::EdgeSet &vedges = v->edges();
@@ -397,10 +397,10 @@ namespace g2o
       assert(marginalizeColumn.size() == 1 && "more than one block in _Hll column");
 
       // calculate inverse block for the landmark
-      const LandmarkMatrixType *D = marginalizeColumn.begin()->second;  // 路标点的H矩阵，Vi, V1
+      const LandmarkMatrixType *D = marginalizeColumn.begin()->second; // 路标点的H矩阵，Vi, V1
       assert(D && D->rows() == D->cols() && "Error in landmark matrix");
       LandmarkMatrixType &Dinv = _DInvSchur->diagonal()[landmarkIndex]; // 求逆并存储
-      Dinv = D->inverse();  // Vi^(-1), V1^(-1)
+      Dinv = D->inverse();                                              // Vi^(-1), V1^(-1)
 
       LandmarkVectorType db(D->rows());
       for (int j = 0; j < D->rows(); ++j)
@@ -420,7 +420,7 @@ namespace g2o
         const PoseLandmarkMatrixType *Bi = it_outer->block; // 位姿-路标点的H矩阵，Wij (j >= i), W11, W12, W13
         assert(Bi);
 
-        PoseLandmarkMatrixType BDinv = (*Bi) * (Dinv);  // Wij Vi^(-1), W11 V1^(-1), W12 V1^(-1), W13 V1^(-1)
+        PoseLandmarkMatrixType BDinv = (*Bi) * (Dinv); // Wij Vi^(-1), W11 V1^(-1), W12 V1^(-1), W13 V1^(-1)
         assert(_HplCCS->rowBaseOfBlock(i1) < _sizePoses && "Index out of bounds");
         typename PoseVectorType::MapType Bb(&_coefficients[_HplCCS->rowBaseOfBlock(i1)], Bi->rows());
 #ifdef G2O_OPENMP
@@ -453,7 +453,7 @@ namespace g2o
 
     // _bschur = _b for calling solver, and not touching _b
     memcpy(_bschur.get(), _b, _sizePoses * sizeof(number_t)); // 原始b向量
-    for (int i = 0; i < _sizePoses; ++i)  // 进行舒尔补操作
+    for (int i = 0; i < _sizePoses; ++i)                      // 进行舒尔补操作
     {
       _bschur[i] -= _coefficients[i];
     }
@@ -465,7 +465,7 @@ namespace g2o
     }
 
     t = get_monotonic_time();
-    bool solvedPoses = _linearSolver->solve(*_Hschur, _x, _bschur.get());   // 先求解位姿
+    bool solvedPoses = _linearSolver->solve(*_Hschur, _x, _bschur.get()); // 先求解位姿
     if (globalStats)
     {
       globalStats->timeLinearSolver = get_monotonic_time() - t;
@@ -481,7 +481,7 @@ namespace g2o
     // _x contains the solution for the poses, now applying it to the landmarks to get the new part of the
     // solution;
     // 位姿相关
-    number_t *xp = _x;    
+    number_t *xp = _x;
     number_t *cp = _coefficients.get();
     // 路标点相关
     number_t *xl = _x + _sizePoses;
@@ -556,7 +556,7 @@ namespace g2o
     {
       OptimizableGraph::Edge *e = _optimizer->activeEdges()[k];
       e->linearizeOplus(jacobianWorkspace); // jacobian of the nodes' oplus (manifold) // 线性化，计算雅可比矩阵
-      e->constructQuadraticForm(); // 计算H矩阵，因为节点（对角线)和边（非对角线）的海塞矩阵都是使用的Eigen::Map，因此计算完后海塞矩阵也计算完了
+      e->constructQuadraticForm();          // 计算H矩阵，因为节点（对角线)和边（非对角线）的海塞矩阵都是使用的Eigen::Map，因此计算完后海塞矩阵也计算完了
 #ifndef NDEBUG
       for (size_t i = 0; i < e->vertices().size(); ++i)
       {
