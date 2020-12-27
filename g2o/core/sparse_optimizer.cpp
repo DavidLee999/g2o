@@ -126,20 +126,17 @@ namespace g2o
     if (vertices().empty())
       return nullptr;
 
-    int maxDim = 0;
-    for (HyperGraph::VertexIDMap::iterator it = vertices().begin(); it != vertices().end(); ++it)
-    {
-      OptimizableGraph::Vertex *v = static_cast<OptimizableGraph::Vertex *>(it->second);
-      maxDim = std::max(maxDim, v->dimension());
+    int maxDim=0;
+    for (HyperGraph::VertexIDMap::iterator it=vertices().begin(); it!=vertices().end(); ++it){
+      OptimizableGraph::Vertex* v=static_cast<OptimizableGraph::Vertex*>(it->second);
+      maxDim=std::max(maxDim,v->dimension());
     }
 
-    OptimizableGraph::Vertex *rut = 0;
-    for (HyperGraph::VertexIDMap::iterator it = vertices().begin(); it != vertices().end(); ++it)
-    {
-      OptimizableGraph::Vertex *v = static_cast<OptimizableGraph::Vertex *>(it->second);
-      if (v->dimension() == maxDim)
-      {
-        rut = v;
+    OptimizableGraph::Vertex* rut=0;
+    for (HyperGraph::VertexIDMap::iterator it=vertices().begin(); it!=vertices().end(); ++it){
+      OptimizableGraph::Vertex* v=static_cast<OptimizableGraph::Vertex*>(it->second);
+      if (v->dimension()==maxDim){
+        rut=v;
         break;
       }
     }
@@ -151,11 +148,10 @@ namespace g2o
     if (vertices().empty())
       return false;
 
-    int maxDim = 0;
-    for (HyperGraph::VertexIDMap::iterator it = vertices().begin(); it != vertices().end(); ++it)
-    {
-      OptimizableGraph::Vertex *v = static_cast<OptimizableGraph::Vertex *>(it->second);
-      maxDim = std::max(maxDim, v->dimension());
+    int maxDim=0;
+    for (HyperGraph::VertexIDMap::iterator it=vertices().begin(); it!=vertices().end(); ++it){
+      OptimizableGraph::Vertex* v=static_cast<OptimizableGraph::Vertex*>(it->second);
+      maxDim = std::max(maxDim,v->dimension());
     }
 
     for (HyperGraph::VertexIDMap::iterator it = vertices().begin(); it != vertices().end(); ++it)
@@ -601,11 +597,9 @@ namespace g2o
       (*it)->pop();
   }
 
-  void SparseOptimizer::push(HyperGraph::VertexSet &vlist)
-  {
-    for (HyperGraph::VertexSet::iterator it = vlist.begin(); it != vlist.end(); ++it)
-    {
-      OptimizableGraph::Vertex *v = dynamic_cast<OptimizableGraph::Vertex *>(*it);
+  void SparseOptimizer::push(HyperGraph::VertexSet& vlist) {
+    for (HyperGraph::VertexSet::iterator it = vlist.begin(); it != vlist.end(); ++it) {
+      OptimizableGraph::Vertex* v = dynamic_cast<OptimizableGraph::Vertex*>(*it);
       if (v)
         v->push();
       else
@@ -613,11 +607,9 @@ namespace g2o
     }
   }
 
-  void SparseOptimizer::pop(HyperGraph::VertexSet &vlist)
-  {
-    for (HyperGraph::VertexSet::iterator it = vlist.begin(); it != vlist.end(); ++it)
-    {
-      OptimizableGraph::Vertex *v = dynamic_cast<OptimizableGraph::Vertex *>(*it);
+  void SparseOptimizer::pop(HyperGraph::VertexSet& vlist) {
+    for (HyperGraph::VertexSet::iterator it = vlist.begin(); it != vlist.end(); ++it) {
+      OptimizableGraph::Vertex* v = dynamic_cast<OptimizableGraph::Vertex*>(*it);
       if (v)
         v->pop();
       else
