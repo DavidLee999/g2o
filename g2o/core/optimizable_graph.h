@@ -27,19 +27,19 @@
 #ifndef G2O_AIS_OPTIMIZABLE_GRAPH_HH_
 #define G2O_AIS_OPTIMIZABLE_GRAPH_HH_
 
-#include <set>
+#include <functional>
 #include <iostream>
+#include <set>
 #include <typeinfo>
-
-#include "openmp_mutex.h"
-#include "hyper_graph.h"
-#include "parameter.h"
-#include "parameter_container.h"
-#include "jacobian_workspace.h"
 
 #include "g2o/stuff/macros.h"
 #include "g2o_core_api.h"
+#include "hyper_graph.h"
 #include "io_helper.h"
+#include "jacobian_workspace.h"
+#include "openmp_mutex.h"
+#include "parameter.h"
+#include "parameter_container.h"
 
 namespace g2o
 {
@@ -96,6 +96,10 @@ namespace g2o
       {
         return e1->internalId() < e2->internalId();
       }
+      bool operator() (const HyperGraph::Edge* e1, const HyperGraph::Edge* e2) const
+      {
+        return operator()(static_cast<const Edge*>(e1), static_cast<const Edge*>(e2));
+      }
     };
 
     //! vector container for vertices
@@ -106,36 +110,26 @@ namespace g2o
     /**
      * \brief A general case Vertex for optimization
      */
-    class G2O_CORE_API Vertex : public HyperGraph::Vertex, public HyperGraph::DataContainer
-    {
-    private:
-      friend struct OptimizableGraph;
+    class G2O_CORE_API Vertex : public HyperGraph::Vertex, public HyperGraph::DataContainer {
+      private:
+        friend struct OptimizableGraph;
+      public:
+        Vertex();
+        virtual ~Vertex();
 
-    public:
-      Vertex();
+        //! sets the node to the origin (used in the multilevel stuff)
+        void setToOrigin() { setToOriginImpl(); updateCache();}
 
-      //! returns a deep copy of the current vertex
-      virtual Vertex *clone() const;
+        //! get the element from the hessian matrix
+        virtual const number_t& hessian(int i, int j) const = 0;
+        virtual number_t& hessian(int i, int j) = 0;
+        virtual number_t hessianDeterminant() const = 0;
+        virtual number_t* hessianData() = 0;
 
-      virtual ~Vertex();
+        /** maps the internal matrix to some external memory location */
+        virtual void mapHessianMemory(number_t* d) = 0;
 
-      //! sets the node to the origin (used in the multilevel stuff)
-      void setToOrigin()
-      {
-        setToOriginImpl();
-        updateCache();
-      }
-
-      //! get the element from the hessian matrix
-      virtual const number_t &hessian(int i, int j) const = 0;
-      virtual number_t &hessian(int i, int j) = 0;
-      virtual number_t hessianDeterminant() const = 0;
-      virtual number_t *hessianData() = 0;
-
-      /** maps the internal matrix to some external memory location */
-      virtual void mapHessianMemory(number_t *d) = 0;
-
-      /**
+        /**
          * copies the b vector in the array b_
          * @return the number of elements copied
          */
@@ -163,9 +157,9 @@ namespace g2o
          * Implement setEstimateDataImpl()
          * @return true on success
          */
-      bool setEstimateData(const number_t *estimate);
+        bool setEstimateData(const number_t* estimate);
 
-      /**
+        /**
          * sets the initial estimate from an array of number_t
          * Implement setEstimateDataImpl()
          * @return true on success
@@ -364,9 +358,8 @@ namespace g2o
       friend struct OptimizableGraph;
 
     public:
-      Edge();
-      virtual ~Edge();
-      virtual Edge *clone() const;
+        Edge();
+        virtual ~Edge();
 
       // indicates if all vertices are fixed
       virtual bool allVerticesFixed() const = 0;
@@ -442,75 +435,65 @@ namespace g2o
          * The return value may correspond to the cost for initiliaizng the vertex but should be positive if
          * the initialization is possible and negative if not possible.
          */
-      virtual number_t initialEstimatePossible(const OptimizableGraph::VertexSet &from, OptimizableGraph::Vertex *to)
-      {
-        (void)from;
-        (void)to;
-        return -1.;
-      }
+        virtual number_t initialEstimatePossible(const OptimizableGraph::VertexSet& from, OptimizableGraph::Vertex* to) { (void) from; (void) to; return -1.;}
 
-      //! returns the level of the edge
-      int level() const { return _level; }
-      //! sets the level of the edge
-      void setLevel(int l) { _level = l; }
+        //! returns the level of the edge
+        int level() const { return _level;}
+        //! sets the level of the edge
+        void setLevel(int l) { _level=l;}
 
-      //! returns the dimensions of the error function
-      int dimension() const { return _dimension; }
+        //! returns the dimensions of the error function
+        int dimension() const { return _dimension;}
 
-      G2O_ATTRIBUTE_DEPRECATED(virtual Vertex *createFrom()) { return nullptr; }
-      G2O_ATTRIBUTE_DEPRECATED(virtual Vertex *createTo()) { return nullptr; }
-      virtual Vertex *createVertex(int) { return nullptr; }
+        G2O_ATTRIBUTE_DEPRECATED(virtual Vertex* createFrom()) { return nullptr; }
+        G2O_ATTRIBUTE_DEPRECATED(virtual Vertex* createTo()) { return nullptr; }
+        virtual Vertex* createVertex(int) { return nullptr; }
 
-      //! read the vertex from a stream, i.e., the internal state of the vertex
-      virtual bool read(std::istream &is) = 0;
-      //! write the vertex to a stream
-      virtual bool write(std::ostream &os) const = 0;
+        //! read the vertex from a stream, i.e., the internal state of the vertex
+        virtual bool read(std::istream& is) = 0;
+        //! write the vertex to a stream
+        virtual bool write(std::ostream& os) const = 0;
 
-      //! the internal ID of the edge
-      long long internalId() const { return _internalId; }
+        //! the internal ID of the edge
+        long long internalId() const { return _internalId;}
 
-      OptimizableGraph *graph();
-      const OptimizableGraph *graph() const;
+        OptimizableGraph* graph();
+        const OptimizableGraph* graph() const;
 
-      bool setParameterId(int argNum, int paramId);
-      inline const Parameter *parameter(int argNo) const { return *_parameters.at(argNo); }
-      inline size_t numParameters() const { return _parameters.size(); }
-      inline void resizeParameters(size_t newSize)
-      {
-        _parameters.resize(newSize, 0);
-        _parameterIds.resize(newSize, -1);
-        _parameterTypes.resize(newSize, typeid(void *).name());
-      }
+        bool setParameterId(int argNum, int paramId);
+        inline const Parameter* parameter(int argNo) const {return *_parameters.at(argNo);}
+        inline size_t numParameters() const {return _parameters.size();}
+        inline void resizeParameters(size_t newSize) {
+          _parameters.resize(newSize, 0);
+          _parameterIds.resize(newSize, -1);
+          _parameterTypes.resize(newSize, typeid(void*).name());
+        }
+      protected:
+       int _dimension;
+       int _level;
+       RobustKernel* _robustKernel;
+       long long _internalId;
+       std::vector<int> _cacheIds;
 
-    protected:
-      int _dimension;
-      int _level;
-      RobustKernel *_robustKernel;
-      long long _internalId;
-      std::vector<int> _cacheIds;
+       template <typename ParameterType>
+       bool installParameter(ParameterType*& p, size_t argNo, int paramId = -1) {
+         if (argNo >= _parameters.size()) return false;
+         _parameterIds[argNo] = paramId;
+         _parameters[argNo] = (Parameter**)&p;
+         _parameterTypes[argNo] = typeid(ParameterType).name();
+         return true;
+       }
 
-      template <typename ParameterType>
-      bool installParameter(ParameterType *&p, size_t argNo, int paramId = -1)
-      {
-        if (argNo >= _parameters.size())
-          return false;
-        _parameterIds[argNo] = paramId;
-        _parameters[argNo] = (Parameter **)&p;
-        _parameterTypes[argNo] = typeid(ParameterType).name();
-        return true;
-      }
+       template <typename CacheType>
+       void resolveCache(CacheType*& cache, OptimizableGraph::Vertex*, const std::string& _type,
+                         const ParameterVector& parameters);
 
-      template <typename CacheType>
-      void resolveCache(CacheType *&cache, OptimizableGraph::Vertex *,
-                        const std::string &_type,
-                        const ParameterVector &parameters);
+       bool resolveParameters();
+       virtual bool resolveCaches();
 
-      bool resolveParameters();
-      virtual bool resolveCaches();
-
-      std::vector<std::string> _parameterTypes;
-      std::vector<Parameter **> _parameters;
-      std::vector<int> _parameterIds;
+       std::vector<std::string> _parameterTypes;
+       std::vector<Parameter**> _parameters;
+       std::vector<int> _parameterIds;
     };
 
     //! returns the vertex number <i>id</i> appropriately casted
@@ -522,9 +505,6 @@ namespace g2o
     //! empty constructor
     OptimizableGraph();
     virtual ~OptimizableGraph();
-
-    //! adds all edges and vertices of the graph <i>g</i> to this graph.
-    void addGraph(OptimizableGraph *g);
 
     /**
      * adds a new vertex. The new vertex is then "taken".
@@ -595,9 +575,11 @@ namespace g2o
     //! discard the last backup of the estimate for all variables by removing it from the stack
     virtual void discardTop();
 
+
+
     //! load the graph from a stream. Uses the Factory singleton for creating the vertices and edges.
-    virtual bool load(std::istream &is, bool createEdges = true);
-    bool load(const char *filename, bool createEdges = true);
+    virtual bool load(std::istream& is);
+    bool load(const char* filename);
     //! save the graph to a stream. Again uses the Factory system.
     virtual bool save(std::ostream &os, int level = 0) const;
     //! function provided for convenience, see save() above
@@ -683,13 +665,15 @@ namespace g2o
     inline ParameterContainer &parameters() { return _parameters; }
     inline const ParameterContainer &parameters() const { return _parameters; }
 
+    //! apply a unary function to all vertices
+    void forEachVertex(std::function<void(OptimizableGraph::Vertex*)> fn);
+    //! apply a unary function to the vertices in vset
+    void forEachVertex(HyperGraph::VertexSet& vset, std::function<void(OptimizableGraph::Vertex*)> fn);
+
   protected:
     std::map<std::string, std::string> _renamedTypesLookup;
     long long _nextEdgeId;
     std::vector<HyperGraphActionSet> _graphActions;
-
-    // do not watch this. To be removed soon, or integrated in a nice way
-    bool _edge_has_id;
 
     ParameterContainer _parameters;
     JacobianWorkspace _jacobianWorkspace;
