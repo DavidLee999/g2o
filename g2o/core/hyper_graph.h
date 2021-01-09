@@ -49,7 +49,7 @@ namespace g2o
      that operate transparently on edges or vertices (see HyperGraphAction).
 
      The vertices are uniquely identified by an int id, while the edges are
-     identfied by their pointers. 
+     identfied by their pointers.
    */
   class G2O_CORE_API HyperGraph
   {
@@ -57,27 +57,26 @@ namespace g2o
     /**
        * \brief enum of all the types we have in our graphs
        */
-    enum G2O_CORE_API HyperGraphElementType
-    {
-      HGET_VERTEX,
-      HGET_EDGE,
-      HGET_PARAMETER,
-      HGET_CACHE,
-      HGET_DATA,
-      HGET_NUM_ELEMS // keep as last elem
-    };
+      enum G2O_CORE_API HyperGraphElementType {
+        HGET_VERTEX,
+        HGET_EDGE,
+        HGET_PARAMETER,
+        HGET_CACHE,
+        HGET_DATA,
+        HGET_NUM_ELEMS // keep as last elem
+      };
 
-    static const int UnassignedId = -1;
-    static const int InvalidId = -2;
+      static const int UnassignedId = -1;
+      static const int InvalidId = -2;
 
-    typedef std::bitset<HyperGraph::HGET_NUM_ELEMS> GraphElemBitset;
+      typedef std::bitset<HyperGraph::HGET_NUM_ELEMS> GraphElemBitset;
 
-    class G2O_CORE_API Data;
-    class G2O_CORE_API DataContainer;
-    class G2O_CORE_API Vertex;
-    class G2O_CORE_API Edge;
+      class G2O_CORE_API Data;
+      class G2O_CORE_API DataContainer;
+      class G2O_CORE_API Vertex;
+      class G2O_CORE_API Edge;
 
-    /**
+      /**
        * base hyper graph element, specialized in vertex and edge
        */
     struct G2O_CORE_API HyperGraphElement
@@ -86,9 +85,8 @@ namespace g2o
       /**
          * returns the type of the graph element, see HyperGraphElementType
          */
-      virtual HyperGraphElementType elementType() const = 0;
-      HyperGraphElement *clone() const { return nullptr; }
-    };
+        virtual HyperGraphElementType elementType() const = 0;
+      };
 
     /**
        * \brief data packet for a vertex. Extend this class to store in the vertices
@@ -120,57 +118,47 @@ namespace g2o
        * \brief Container class that implements an interface for adding/removing Data elements in
        a linked list
        */
-    class G2O_CORE_API DataContainer
-    {
-    public:
-      DataContainer() { _userData = 0; }
-      virtual ~DataContainer() { delete _userData; }
-      //! the user data associated with this vertex
-      const Data *userData() const { return _userData; }
-      Data *userData() { return _userData; }
-      void setUserData(Data *obs) { _userData = obs; }
-      void addUserData(Data *obs)
-      {
-        if (obs)
-        {
-          obs->setNext(_userData);
-          _userData = obs;
-        }
-      }
+      class G2O_CORE_API DataContainer {
+        public:
+          DataContainer() {_userData = 0;}
+          virtual ~DataContainer() { delete _userData;}
+          //! the user data associated with this vertex
+          const Data* userData() const { return _userData; }
+          Data* userData() { return _userData; }
+          void setUserData(Data* obs) { _userData = obs;}
+          void addUserData(Data* obs) { if (obs) { obs->setNext(_userData); _userData=obs; } }
+        protected:
+          Data* _userData;
+      };
 
-    protected:
-      Data *_userData;
-    };
 
-    // lph：利用公共头文件type来实现
-    typedef std::set<Edge *> EdgeSet;
-    typedef std::set<Vertex *> VertexSet;
+      typedef std::set<Edge*>                           EdgeSet;
+      typedef std::set<Vertex*>                         VertexSet;
 
-    typedef std::unordered_map<int, Vertex *> VertexIDMap;
-    typedef std::vector<Vertex *> VertexContainer;
+      typedef std::unordered_map<int, Vertex*>     VertexIDMap;
+      typedef std::vector<Vertex*>                      VertexContainer;
 
-    //! abstract Vertex, your types must derive from that one
-    class G2O_CORE_API Vertex : public HyperGraphElement
-    {
-    public:
-      //! creates a vertex having an ID specified by the argument
-      explicit Vertex(int id = InvalidId);
-      virtual ~Vertex();
-      //! returns the id
-      int id() const { return _id; }
-      virtual void setId(int newId) { _id = newId; }
-      //! returns the set of hyper-edges that are leaving/entering in this vertex
-      const EdgeSet &edges() const { return _edges; }
-      //! returns the set of hyper-edges that are leaving/entering in this vertex
-      EdgeSet &edges() { return _edges; }
-      virtual HyperGraphElementType elementType() const { return HGET_VERTEX; }
+      //! abstract Vertex, your types must derive from that one
+      class G2O_CORE_API Vertex : public HyperGraphElement {
+        public:
+          //! creates a vertex having an ID specified by the argument
+          explicit Vertex(int id=InvalidId);
+          virtual ~Vertex();
+          //! returns the id
+          int id() const {return _id;}
+          virtual void setId(int newId) { _id = newId; }
+          //! returns the set of hyper-edges that are leaving/entering in this vertex
+          const EdgeSet& edges() const {return _edges;}
+          //! returns the set of hyper-edges that are leaving/entering in this vertex
+          EdgeSet& edges() {return _edges;}
+          virtual HyperGraphElementType elementType() const { return HGET_VERTEX;}
+        protected:
+          int _id;
+          EdgeSet _edges;
+      };
 
-    protected:
-      int _id;
-      EdgeSet _edges;
-    };
 
-    /** 
+      /**
        * Abstract Edge class. Your nice edge classes should inherit from that one.
        * An hyper-edge has pointers to the vertices it connects and stores them in a vector.
        */
@@ -222,7 +210,40 @@ namespace g2o
       void setId(int id);
       virtual HyperGraphElementType elementType() const { return HGET_EDGE; }
 
-      int numUndefinedVertices() const;
+          int numUndefinedVertices() const;
+
+         protected:
+          VertexContainer _vertices;
+          int _id;  ///< unique id
+      };
+
+    public:
+      //! constructs an empty hyper graph
+      HyperGraph();
+      //! destroys the hyper-graph and all the vertices of the graph
+      virtual ~HyperGraph();
+
+      //! returns a vertex <i>id</i> in the hyper-graph, or 0 if the vertex id is not present
+      Vertex* vertex(int id);
+      //! returns a vertex <i>id</i> in the hyper-graph, or 0 if the vertex id is not present
+      const Vertex* vertex(int id) const;
+
+      //! removes a vertex from the graph. Returns true on success (vertex was present)
+      virtual bool removeVertex(Vertex* v, bool detach=false);
+      //! removes a vertex from the graph. Returns true on success (edge was present)
+      virtual bool removeEdge(Edge* e);
+      //! clears the graph and empties all structures.
+      virtual void clear();
+
+      //! @returns the map <i>id -> vertex</i> where the vertices are stored
+      const VertexIDMap& vertices() const {return _vertices;}
+      //! @returns the map <i>id -> vertex</i> where the vertices are stored
+      VertexIDMap& vertices() {return _vertices;}
+
+      //! @returns the set of edges of the hyper graph
+      const EdgeSet& edges() const {return _edges;}
+      //! @returns the set of edges of the hyper graph
+      EdgeSet& edges() {return _edges;}
 
     protected:
       VertexContainer _vertices;
