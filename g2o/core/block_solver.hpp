@@ -210,7 +210,7 @@ namespace g2o
             e->mapHessianMemory(m->data(), viIdx, vjIdx, transposedBlock);
             if (_Hschur)
             { // assume this is only needed in case we solve with the schur complement
-              schurMatrixLookup->addBlock(ind1, ind2);
+              schurMatrixLookup->addBlock(ind1, ind2); // 位姿间关系，会在(ind1, idx2)处引入fill-in（本身也会有H矩阵）
             }
           }
           else if (v1->marginalized() && v2->marginalized())
@@ -256,19 +256,23 @@ namespace g2o
     {
       if (v->marginalized()) // 要被marg的节点
       {
-        // 该节点被marg后，会引入值的地方，即在(i1, i1), (i2, i2), (i1, i2), (i2, i1)引入值
+        // 节点v被marg后，通过边与之相连的节点v1, v2, ..., vn 两两之间会被引入fill-in
         const HyperGraph::EdgeSet &vedges = v->edges();
         for (HyperGraph::EdgeSet::const_iterator it1 = vedges.begin(); it1 != vedges.end(); ++it1)
         {
+          // 找到和v相连的各个节点
           for (size_t i = 0; i < (*it1)->vertices().size(); ++i)
           {
+            // v1通过it1和v相连
             OptimizableGraph::Vertex *v1 = (OptimizableGraph::Vertex *)(*it1)->vertex(i);
             if (v1->hessianIndex() == -1 || v1 == v)
               continue;
+            // 循环有所重复是因为会在(i1, i1), (i2, i2), (i1, i2)和(i2, i1)引入fill-in
             for (HyperGraph::EdgeSet::const_iterator it2 = vedges.begin(); it2 != vedges.end(); ++it2)
             {
               for (size_t j = 0; j < (*it2)->vertices().size(); ++j)
               {
+                // v2通过it2和v相连
                 OptimizableGraph::Vertex *v2 = (OptimizableGraph::Vertex *)(*it2)->vertex(j);
                 if (v2->hessianIndex() == -1 || v2 == v)
                   continue;
@@ -276,6 +280,7 @@ namespace g2o
                 int i2 = v2->hessianIndex();
                 if (i1 <= i2)
                 {
+                  // 会在(i1, i2)和(i2, i1)之间引入fill-in
                   schurMatrixLookup->addBlock(i1, i2);
                 }
               }
@@ -445,7 +450,7 @@ namespace g2o
           assert(targetColumnIt != _HschurTransposedCCS->blockCols()[i1].end() && targetColumnIt->row == i2 && "invalid iterator, something wrong with the matrix structure");
           PoseMatrixType *Hi1i2 = targetColumnIt->block; //_Hschur->block(i1,i2);
           assert(Hi1i2);
-          (*Hi1i2).noalias() -= BDinv * Bj->transpose(); // S矩阵，按列构建，逐个累加，且只构建上三角，Wij Vi^(-1) Wik
+          (*Hi1i2).noalias() -= BDinv * Bj->transpose(); // S矩阵，按列构建（构建完一行再下一行），逐个累加，且只构建上三角，Wij Vi^(-1) Wik
         }
       }
     }
@@ -482,7 +487,7 @@ namespace g2o
     // solution;
     // 位姿相关
     number_t *xp = _x;
-    number_t *cp = _coefficients.get();
+    number_t *cp = _coefficients.get(); // 复用_coeff的内存
     // 路标点相关
     number_t *xl = _x + _sizePoses;
     number_t *cl = _coefficients.get() + _sizePoses;
